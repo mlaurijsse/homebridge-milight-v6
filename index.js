@@ -8,7 +8,7 @@ module.exports = function(homebridge) {
   Characteristic.WhiteMode = makeWhiteModeCharacteristic(homebridge.hap.uuid);
   Characteristic.WhiteTemperature = makeWhiteTemperatureCharacteristic(homebridge.hap.uuid);
   Characteristic.NightMode = makeNightModeCharacteristic(homebridge.hap.uuid);
-  homebridge.registerPlatform("homebridge-milight-v6", "Milight", MiLightPlatform);
+  homebridge.registerPlatform("homebridge-milight-v6", "MiLight-v6", MiLightPlatform);
 };
 
 //
@@ -103,35 +103,35 @@ function MiLightAccessory(log, config, controller) {
   this.service.addCharacteristic(Characteristic.Brightness).on('set', this.setBrightness.bind(this));
   this.service.addCharacteristic(Characteristic.Hue).on('set', this.setHue.bind(this));
 
-  if (this.type == "fullcolor") {
+  if (this.type.toLowerCase() == "fullcolor") {
     this.service.addCharacteristic(Characteristic.Saturation).on('set', this.setSaturation.bind(this));
     this.service.addCharacteristic(Characteristic.WhiteMode).on('set', this.setWhiteMode.bind(this));
     this.service.addCharacteristic(Characteristic.WhiteTemperature).on('set', this.setTemperature.bind(this));
     this.commands = Milight.commandsV6.fullColor;
   }
-  if (this.type == "bridge") {
+  if (this.type.toLowerCase() == "bridge") {
     this.service.addCharacteristic(Characteristic.Saturation).on('set', this.setSaturation.bind(this));
     this.service.addCharacteristic(Characteristic.WhiteMode).on('set', this.setWhiteMode.bind(this));
     this.service.addCharacteristic(Characteristic.WhiteTemperature).on('set', this.setTemperature.bind(this));
     this.commands = Milight.commandsV6.bridge;
   }
-  if (this.type == "rgbww") {
+  if (this.type.toLowerCase() == "rgbww") {
     this.service.addCharacteristic(Characteristic.Saturation).on('set', this.setSaturation.bind(this));
     this.service.addCharacteristic(Characteristic.WhiteMode).on('set', this.setWhiteMode.bind(this));
     this.commands = Milight.commandsV6.fullColor;
   }
-  if (this.type == "rgbw") {
+  if (this.type.toLowerCase() == "rgbw") {
     this.service.addCharacteristic(Characteristic.WhiteMode).on('set', this.setWhiteMode.bind(this));
     this.commands = this.controller.type = 'v6' ? Milight.commandsV6.rgbw : Milight.commands2.rgbw;
   }
-  if (this.type == "rgb") {
+  if (this.type.toLowerCase() == "rgb") {
     this.commands = this.controller.type = 'v6' ? Milight.commandsV6.rgb : Milight.commands2.rgb;
   }
   if (this.hasnightmode) {
     this.service.addCharacteristic(Characteristic.NightMode).on('set', this.setNightMode.bind(this));
   }
 
-  console.log(this.commands);
+  //console.log(this.commands);
 
   // Set device information
   this.informationService = new Service.AccessoryInformation();
@@ -188,7 +188,7 @@ MiLightAccessory.prototype.setSaturation = function(saturation, callback, contex
 MiLightAccessory.prototype.setWhiteMode = function(on, callback, context) {
   if (context !== 'internal') {
     if (on) {
-      if (this.type == 'rgbww') {
+      if (this.type.toLowerCase() == 'rgbww') {
         this.controller.sendCommands(this.commands.whiteTemperature(this.zone, 0));
       } else {
         this.controller.sendCommands(this.commands.whiteTemperature(this.zone, this.service.getCharacteristic(Characteristic.WhiteTemperature).value));
