@@ -205,12 +205,12 @@ MiLightAccessory.prototype.setWhiteMode = function(on, callback, context) {
     consoleDebug('Setting white mode to %d', on);
 
     if (on) {
+      this.service.getCharacteristic(Characteristic.On).setValue(1, false);
       if (this.type.toLowerCase() == 'rgbww') {
         this.controller.sendCommands(this.commands.whiteTemperature(this.zone, 0));
       } else {
         this.controller.sendCommands(this.commands.whiteTemperature(this.zone, this.service.getCharacteristic(Characteristic.WhiteTemperature).value));
       }
-      this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
     } else {
       this.controller.sendCommands(this.commands.hue(this.zone, Math.round((this.service.getCharacteristic(Characteristic.Hue).value + 14) * 255 / 360)%256));
       if (this.type.toLowerCase() == 'rgbww' || this.type.toLowerCase() == 'bridge' || this.type.toLowerCase() == 'fullcolor') {
