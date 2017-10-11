@@ -2,6 +2,13 @@ var Milight = require('node-milight-promise');
 var inherits = require('util').inherits;
 var Service, Characteristic;
 
+var debug = process.env.hasOwnProperty('MILIGHT_DEBUG') ? consoleDebug : function () {
+};
+
+function consoleDebug() {
+    console.log.apply(this, arguments);
+}
+
 module.exports = function(homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
@@ -94,8 +101,6 @@ function MiLightAccessory(log, config, controller) {
   this.type = config.type || "fullcolor";
   this.zone = config.zone || 1;
   this.hasnightmode = config.hasnightmode || false;
-  this.commands = this.controller.type = 'v6' ? Milight.commandsV6 : Milight.commands2;
-
 
   this.service = new Service.Lightbulb(this.name);
 
@@ -130,6 +135,11 @@ function MiLightAccessory(log, config, controller) {
   if (this.hasnightmode) {
     this.service.addCharacteristic(Characteristic.NightMode).on('set', this.setNightMode.bind(this));
   }
+  if (this.commands === undefined) {
+    this.log("[Warning] Unknown zone type: %s, using 'fullcolor' instead", this.type);
+    this.commands = Milight.commandsV6.fullColor;
+    this.type = 'fullcolor';
+  }
 
   //console.log(this.commands);
 
@@ -150,6 +160,7 @@ MiLightAccessory.prototype.getServices = function() {
 
 MiLightAccessory.prototype.setOn = function(on, callback, context) {
   if (context !== 'internal') {
+    consoleDebug('Setting power to %s', on);
     if (on) {
       this.controller.sendCommands(this.commands.on(this.zone));
     } else {
@@ -161,6 +172,7 @@ MiLightAccessory.prototype.setOn = function(on, callback, context) {
 
 MiLightAccessory.prototype.setBrightness = function(brightness, callback, context) {
   if (context !== 'internal') {
+    consoleDebug('Setting brightness to %d', brightness);
     this.controller.sendCommands(this.commands.brightness(this.zone, brightness));
     this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
   }
@@ -169,7 +181,9 @@ MiLightAccessory.prototype.setBrightness = function(brightness, callback, contex
 
 MiLightAccessory.prototype.setHue = function(hue, callback, context) {
   if (context !== 'internal') {
-    this.controller.sendCommands(this.commands.hue(this.zone, hue));
+    consoleDebug('Setting hue to %d', hue);
+    hue = Math.round((hue+14) * 255 / 360)%256;
+    this.controller.sendCommands(this.commands.hue(this.zone, hue, false));
     this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
     this.service.getCharacteristic(Characteristic.WhiteMode).setValue(0, false, 'internal');
   }
@@ -178,7 +192,8 @@ MiLightAccessory.prototype.setHue = function(hue, callback, context) {
 
 MiLightAccessory.prototype.setSaturation = function(saturation, callback, context) {
   if (context !== 'internal') {
-    this.controller.sendCommands(this.commands.hue(this.zone, saturation));
+    consoleDebug('Setting saturation to %d', saturation);
+    this.controller.sendCommands(this.commands.saturation(this.zone, saturation, true));
     this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
   }
   return callback(null);
@@ -187,6 +202,8 @@ MiLightAccessory.prototype.setSaturation = function(saturation, callback, contex
 
 MiLightAccessory.prototype.setWhiteMode = function(on, callback, context) {
   if (context !== 'internal') {
+    consoleDebug('Setting white mode to %d', on);
+
     if (on) {
       if (this.type.toLowerCase() == 'rgbww') {
         this.controller.sendCommands(this.commands.whiteTemperature(this.zone, 0));
@@ -195,7 +212,10 @@ MiLightAccessory.prototype.setWhiteMode = function(on, callback, context) {
       }
       this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
     } else {
-      this.controller.sendCommands(this.commands.hue(this.zone, this.service.getCharacteristic(Characteristic.Hue).value));
+      this.controller.sendCommands(this.commands.hue(this.zone, Math.round((this.service.getCharacteristic(Characteristic.Hue).value + 14) * 255 / 360)%256));
+      if (this.type.toLowerCase() == 'rgbww' || this.type.toLowerCase() == 'bridge' || this.type.toLowerCase() == 'fullcolor') {
+        this.controller.sendCommands(this.commands.saturation(this.zone, this.service.getCharacteristic(Characteristic.Saturation).value, true));
+      }
       this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
     }
   }
