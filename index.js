@@ -160,7 +160,7 @@ MiLightAccessory.prototype.getServices = function() {
 
 MiLightAccessory.prototype.setOn = function(on, callback, context) {
   if (context !== 'internal') {
-    consoleDebug('Setting power to %s', on);
+    debug('Setting power to %s', on);
     if (on) {
       this.controller.sendCommands(this.commands.on(this.zone));
     } else {
@@ -172,7 +172,7 @@ MiLightAccessory.prototype.setOn = function(on, callback, context) {
 
 MiLightAccessory.prototype.setBrightness = function(brightness, callback, context) {
   if (context !== 'internal') {
-    consoleDebug('Setting brightness to %d', brightness);
+    debug('Setting brightness to %d', brightness);
     this.controller.sendCommands(this.commands.brightness(this.zone, brightness));
     this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
   }
@@ -181,7 +181,7 @@ MiLightAccessory.prototype.setBrightness = function(brightness, callback, contex
 
 MiLightAccessory.prototype.setHue = function(hue, callback, context) {
   if (context !== 'internal') {
-    consoleDebug('Setting hue to %d', hue);
+    debug('Setting hue to %d', hue);
     hue = Math.round((hue+14) * 255 / 360)%256;
     this.controller.sendCommands(this.commands.hue(this.zone, hue, false));
     this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
@@ -192,7 +192,7 @@ MiLightAccessory.prototype.setHue = function(hue, callback, context) {
 
 MiLightAccessory.prototype.setSaturation = function(saturation, callback, context) {
   if (context !== 'internal') {
-    consoleDebug('Setting saturation to %d', saturation);
+    debug('Setting saturation to %d', saturation);
     this.controller.sendCommands(this.commands.saturation(this.zone, saturation, true));
     this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
   }
@@ -202,7 +202,7 @@ MiLightAccessory.prototype.setSaturation = function(saturation, callback, contex
 
 MiLightAccessory.prototype.setWhiteMode = function(on, callback, context) {
   if (context !== 'internal') {
-    consoleDebug('Setting white mode to %d', on);
+    debug('Setting white mode to %d', on);
 
     if (on) {
       this.service.getCharacteristic(Characteristic.On).setValue(1, false);
