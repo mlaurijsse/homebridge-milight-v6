@@ -111,13 +111,13 @@ function MiLightAccessory(log, config, controller) {
   if (this.type.toLowerCase() == "fullcolor") {
     this.service.addCharacteristic(Characteristic.Saturation).on('set', this.setSaturation.bind(this));
     this.service.addCharacteristic(Characteristic.WhiteMode).on('set', this.setWhiteMode.bind(this));
-    this.service.addCharacteristic(Characteristic.WhiteTemperature).on('set', this.setTemperature.bind(this));
+    this.service.addCharacteristic(Characteristic.ColorTemperature).on('set', this.setTemperature.bind(this));
     this.commands = Milight.commandsV6.fullColor;
   }
   if (this.type.toLowerCase() == "bridge") {
     this.service.addCharacteristic(Characteristic.Saturation).on('set', this.setSaturation.bind(this));
     this.service.addCharacteristic(Characteristic.WhiteMode).on('set', this.setWhiteMode.bind(this));
-    this.service.addCharacteristic(Characteristic.WhiteTemperature).on('set', this.setTemperature.bind(this));
+    this.service.addCharacteristic(Characteristic.ColorTemperature).on('set', this.setTemperature.bind(this));
     this.commands = Milight.commandsV6.bridge;
   }
   if (this.type.toLowerCase() == "rgbww") {
