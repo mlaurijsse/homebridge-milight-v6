@@ -72,8 +72,8 @@ MiLightPlatform.prototype._addDevices = function(bridgeConfig) {
   bridgeController = new Milight.MilightController({
     ip: bridgeConfig.ip || false,
     type: bridgeConfig.type || 'v6',
-    delayBetweenCommands: bridgeConfig.delay || false,
-    commandRepeat: bridgeConfig.repeat || false
+    delayBetweenCommands: bridgeConfig.delay || 0,
+    commandRepeat: bridgeConfig.repeat || undefined
   });
 
   // Create accessories for all of the defined devices
@@ -115,10 +115,29 @@ function MiLightAccessory(log, config, controller) {
     this.commands = Milight.commandsV6.fullColor;
   }
   if (this.type.toLowerCase() == "bridge") {
-    this.service.addCharacteristic(Characteristic.Saturation).on('set', this.setSaturation.bind(this));
     this.service.addCharacteristic(Characteristic.WhiteMode).on('set', this.setWhiteMode.bind(this));
-    this.service.addCharacteristic(Characteristic.ColorTemperature).on('set', this.setTemperature.bind(this));
-    this.commands = Milight.commandsV6.bridge;
+
+    this.commands = {};
+
+    // conform interface of bridge commands
+    this.commands.on = function(dummy) {
+      return Milight.commandsV6.bridge.on();
+    };
+
+    this.commands.off = function(dummy) {
+      return Milight.commandsV6.bridge.off();
+    };
+
+    this.commands.brightness = function(dummy, brightness) {
+      return Milight.commandsV6.bridge.brightness(brightness);
+    };
+    this.commands.whiteMode = function(dummy) {
+      return Milight.commandsV6.bridge.whiteMode();
+    };
+    this.commands.hue = function(dummy, hue, offset) {
+      return Milight.commandsV6.bridge.hue(hue, offset);
+    };
+
   }
   if (this.type.toLowerCase() == "rgbww") {
     this.service.addCharacteristic(Characteristic.Saturation).on('set', this.setSaturation.bind(this));
@@ -206,14 +225,16 @@ MiLightAccessory.prototype.setWhiteMode = function(on, callback, context) {
 
     if (on) {
       this.service.getCharacteristic(Characteristic.On).setValue(1, false);
-      if (this.type.toLowerCase() == 'rgbww') {
+      if( this.type.toLowerCase() == 'rgbw' || this.type.toLowerCase() == 'bridge') {
+        this.controller.sendCommands(this.commands.whiteMode(this.zone));
+      } else if (this.type.toLowerCase() == 'rgbww') {
         this.controller.sendCommands(this.commands.whiteTemperature(this.zone, 0));
       } else {
-        this.controller.sendCommands(this.commands.whiteTemperature(this.zone, this.service.getCharacteristic(Characteristic.WhiteTemperature).value));
+        this.controller.sendCommands(this.commands.whiteTemperature(this.zone, this.service.getCharacteristic(Characteristic.ColorTemperature).value));
       }
     } else {
       this.controller.sendCommands(this.commands.hue(this.zone, Math.round((this.service.getCharacteristic(Characteristic.Hue).value + 14) * 255 / 360)%256));
-      if (this.type.toLowerCase() == 'rgbww' || this.type.toLowerCase() == 'bridge' || this.type.toLowerCase() == 'fullcolor') {
+      if (this.type.toLowerCase() == 'rgbww'|| this.type.toLowerCase() == 'fullcolor') {
         this.controller.sendCommands(this.commands.saturation(this.zone, this.service.getCharacteristic(Characteristic.Saturation).value, true));
       }
       this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
@@ -237,7 +258,7 @@ MiLightAccessory.prototype.setNightMode = function(on, callback, context) {
       this.controller.sendCommands(this.commands.nightMode(this.zone));
       this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
     } else {
-      this.service.getCharacteristic(Characteristic.On).setValue(0, false, 'internal');
+      this.controller.sendCommands(this.commands.hue(this.zone, Math.round((this.service.getCharacteristic(Characteristic.Hue).value + 14) * 255 / 360)%256));
     }
   }
   return callback(null);
