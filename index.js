@@ -116,7 +116,7 @@ function MiLightAccessory(log, config, controller) {
   }
   if (this.type.toLowerCase() == "bridge") {
     this.service.addCharacteristic(Characteristic.WhiteMode).on('set', this.setWhiteMode.bind(this));
-
+    this.service.addCharacteristic(Characteristic.Saturation);
     this.commands = {};
 
     // conform interface of bridge commands
@@ -146,9 +146,11 @@ function MiLightAccessory(log, config, controller) {
   }
   if (this.type.toLowerCase() == "rgbw") {
     this.service.addCharacteristic(Characteristic.WhiteMode).on('set', this.setWhiteMode.bind(this));
+    this.service.addCharacteristic(Characteristic.Saturation);
     this.commands = this.controller.type = 'v6' ? Milight.commandsV6.rgbw : Milight.commands2.rgbw;
   }
   if (this.type.toLowerCase() == "rgb") {
+    this.service.addCharacteristic(Characteristic.Saturation);
     this.commands = this.controller.type = 'v6' ? Milight.commandsV6.rgb : Milight.commands2.rgb;
   }
   if (this.hasnightmode) {
