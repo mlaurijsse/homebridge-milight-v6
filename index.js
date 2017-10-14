@@ -99,7 +99,7 @@ function MiLightAccessory(log, config, controller) {
   this.controller = controller;
   this.name = config.name || Milight;
   this.type = config.type || "fullcolor";
-  this.zone = config.zone || 1;
+  this.zone = config.zone || 0;
   this.hasnightmode = config.hasnightmode || false;
 
   this.service = new Service.Lightbulb(this.name);
@@ -181,7 +181,7 @@ MiLightAccessory.prototype.getServices = function() {
 
 MiLightAccessory.prototype.setOn = function(on, callback, context) {
   if (context !== 'internal') {
-    debug('Setting power to %s', on);
+    debug('Setting %s (%s, %d) power to %s', this.name, this.type, this.zone, on);
     if (on) {
       this.controller.sendCommands(this.commands.on(this.zone));
     } else {
@@ -193,7 +193,7 @@ MiLightAccessory.prototype.setOn = function(on, callback, context) {
 
 MiLightAccessory.prototype.setBrightness = function(brightness, callback, context) {
   if (context !== 'internal') {
-    debug('Setting brightness to %d', brightness);
+    debug('Setting %s (%s, %d) brightness to %d', this.name, this.type, this.zone, brightness);
     this.controller.sendCommands(this.commands.brightness(this.zone, brightness));
     this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
   }
@@ -202,7 +202,7 @@ MiLightAccessory.prototype.setBrightness = function(brightness, callback, contex
 
 MiLightAccessory.prototype.setHue = function(hue, callback, context) {
   if (context !== 'internal') {
-    debug('Setting hue to %d', hue);
+    debug('Setting %s (%s, %d) hue to %d', this.name, this.type, this.zone, hue);
     hue = Math.round((hue+14) * 255 / 360)%256;
     this.controller.sendCommands(this.commands.hue(this.zone, hue, false));
     this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
@@ -213,7 +213,7 @@ MiLightAccessory.prototype.setHue = function(hue, callback, context) {
 
 MiLightAccessory.prototype.setSaturation = function(saturation, callback, context) {
   if (context !== 'internal') {
-    debug('Setting saturation to %d', saturation);
+    debug('Setting %s (%s, %d) saturation to %d', this.name, this.type, this.zone, saturation);
     this.controller.sendCommands(this.commands.saturation(this.zone, saturation, true));
     this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
   }
@@ -223,16 +223,17 @@ MiLightAccessory.prototype.setSaturation = function(saturation, callback, contex
 
 MiLightAccessory.prototype.setWhiteMode = function(on, callback, context) {
   if (context !== 'internal') {
-    debug('Setting white mode to %d', on);
+    debug('Setting %s (%s, %d) white mode to %s', this.name, this.type, this.zone, on);
 
     if (on) {
       this.service.getCharacteristic(Characteristic.On).setValue(1, false);
       if( this.type.toLowerCase() == 'rgbw' || this.type.toLowerCase() == 'bridge') {
         this.controller.sendCommands(this.commands.whiteMode(this.zone));
       } else if (this.type.toLowerCase() == 'rgbww') {
-        this.controller.sendCommands(this.commands.whiteTemperature(this.zone, 0));
+        this.controller.sendCommands(this.commands.whiteTemperature(this.zone, 100));
       } else {
-        this.controller.sendCommands(this.commands.whiteTemperature(this.zone, this.service.getCharacteristic(Characteristic.ColorTemperature).value));
+        var temp = 100-Math.round((this.service.getCharacteristic(Characteristic.ColorTemperature).value - 140)*100/(500-140));
+        this.controller.sendCommands(this.commands.whiteTemperature(this.zone, temp));
       }
     } else {
       this.controller.sendCommands(this.commands.hue(this.zone, Math.round((this.service.getCharacteristic(Characteristic.Hue).value + 14) * 255 / 360)%256));
@@ -247,7 +248,9 @@ MiLightAccessory.prototype.setWhiteMode = function(on, callback, context) {
 
 MiLightAccessory.prototype.setTemperature = function(temperature, callback, context) {
   if (context !== 'internal') {
-    this.controller.sendCommands(this.commands.whiteTemperature(this.zone, temperature));
+    debug('Setting %s (%s, %d) temperature to %d', this.name, this.type, this.zone, temperature);
+    var temp = 100-Math.round((temperature - 140)*100/(500-140));
+    this.controller.sendCommands(this.commands.whiteTemperature(this.zone, temp));
     this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
     this.service.getCharacteristic(Characteristic.WhiteMode).setValue(1, false, 'internal');
   }
@@ -256,6 +259,8 @@ MiLightAccessory.prototype.setTemperature = function(temperature, callback, cont
 
 MiLightAccessory.prototype.setNightMode = function(on, callback, context) {
   if (context !== 'internal') {
+    debug('Setting %s (%s, %d) night mode to %s', this.name, this.type, this.zone, on);
+
     if (on) {
       this.controller.sendCommands(this.commands.nightMode(this.zone));
       this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
