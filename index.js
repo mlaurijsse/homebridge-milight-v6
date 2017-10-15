@@ -72,7 +72,7 @@ MiLightPlatform.prototype._addDevices = function(bridgeConfig) {
   bridgeController = new Milight.MilightController({
     ip: bridgeConfig.ip || false,
     type: bridgeConfig.type || 'v6',
-    delayBetweenCommands: bridgeConfig.delay || 100,
+    delayBetweenCommands: bridgeConfig.delay || 25,
     commandRepeat: bridgeConfig.repeat || undefined
   });
 
@@ -229,7 +229,7 @@ MiLightAccessory.prototype.setWhiteMode = function(on, callback, context) {
       if( this.type.toLowerCase() == 'rgbw' || this.type.toLowerCase() == 'bridge') {
         this.controller.sendCommands(this.commands.whiteMode(this.zone));
       } else if (this.type.toLowerCase() == 'rgbww') {
-        this.controller.sendCommands(this.commands.whiteTemperature(this.zone, 100));
+        this.controller.sendCommands(this.commands.whiteTemperature(this.zone, 0));
       } else {
         var temp = 100-Math.round((this.service.getCharacteristic(Characteristic.ColorTemperature).value - 140)*100/(500-140));
         this.controller.sendCommands(this.commands.whiteTemperature(this.zone, temp));
