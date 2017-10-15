@@ -53,7 +53,3 @@ Supported types:
 # Troubleshooting
 The node-milight-promise library provides additional debugging output when the MILIGHT_DEBUG environmental variable is set
 
-# Changelog
-
-### 0.0.1
- * Initial release
