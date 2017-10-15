@@ -72,7 +72,7 @@ MiLightPlatform.prototype._addDevices = function(bridgeConfig) {
   bridgeController = new Milight.MilightController({
     ip: bridgeConfig.ip || false,
     type: bridgeConfig.type || 'v6',
-    delayBetweenCommands: bridgeConfig.delay || 0,
+    delayBetweenCommands: bridgeConfig.delay || 100,
     commandRepeat: bridgeConfig.repeat || undefined
   });
 
@@ -184,6 +184,8 @@ MiLightAccessory.prototype.setOn = function(on, callback, context) {
     debug('Setting %s (%s, %d) power to %s', this.name, this.type, this.zone, on);
     if (on) {
       this.controller.sendCommands(this.commands.on(this.zone));
+      this.setWhiteMode(this.service.getCharacteristic(Characteristic.WhiteMode).value,
+        function(dummy) {}, 'setmode');
     } else {
       this.controller.sendCommands(this.commands.off(this.zone));
     }
@@ -195,7 +197,6 @@ MiLightAccessory.prototype.setBrightness = function(brightness, callback, contex
   if (context !== 'internal') {
     debug('Setting %s (%s, %d) brightness to %d', this.name, this.type, this.zone, brightness);
     this.controller.sendCommands(this.commands.brightness(this.zone, brightness));
-    this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
   }
   return callback(null);
 };
@@ -205,7 +206,6 @@ MiLightAccessory.prototype.setHue = function(hue, callback, context) {
     debug('Setting %s (%s, %d) hue to %d', this.name, this.type, this.zone, hue);
     hue = Math.round((hue+14) * 255 / 360)%256;
     this.controller.sendCommands(this.commands.hue(this.zone, hue, false));
-    this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
     this.service.getCharacteristic(Characteristic.WhiteMode).setValue(0, false, 'internal');
   }
   return callback(null);
@@ -215,7 +215,6 @@ MiLightAccessory.prototype.setSaturation = function(saturation, callback, contex
   if (context !== 'internal') {
     debug('Setting %s (%s, %d) saturation to %d', this.name, this.type, this.zone, saturation);
     this.controller.sendCommands(this.commands.saturation(this.zone, saturation, true));
-    this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
   }
   return callback(null);
 };
@@ -223,10 +222,10 @@ MiLightAccessory.prototype.setSaturation = function(saturation, callback, contex
 
 MiLightAccessory.prototype.setWhiteMode = function(on, callback, context) {
   if (context !== 'internal') {
-    debug('Setting %s (%s, %d) white mode to %s', this.name, this.type, this.zone, on);
-
+    if (context !== 'setmode') {
+      debug('Setting %s (%s, %d) white mode to %s', this.name, this.type, this.zone, on);
+    }
     if (on) {
-      this.service.getCharacteristic(Characteristic.On).setValue(1, false);
       if( this.type.toLowerCase() == 'rgbw' || this.type.toLowerCase() == 'bridge') {
         this.controller.sendCommands(this.commands.whiteMode(this.zone));
       } else if (this.type.toLowerCase() == 'rgbww') {
@@ -235,12 +234,16 @@ MiLightAccessory.prototype.setWhiteMode = function(on, callback, context) {
         var temp = 100-Math.round((this.service.getCharacteristic(Characteristic.ColorTemperature).value - 140)*100/(500-140));
         this.controller.sendCommands(this.commands.whiteTemperature(this.zone, temp));
       }
+      this.controller.sendCommands(this.commands.brightness(this.zone,
+        this.service.getCharacteristic(Characteristic.Brightness).value));
     } else {
-      this.controller.sendCommands(this.commands.hue(this.zone, Math.round((this.service.getCharacteristic(Characteristic.Hue).value + 14) * 255 / 360)%256));
+      this.controller.sendCommands(this.commands.hue(this.zone,
+        Math.round((this.service.getCharacteristic(Characteristic.Hue).value + 14) * 255 / 360)%256));
       if (this.type.toLowerCase() == 'rgbww'|| this.type.toLowerCase() == 'fullcolor') {
         this.controller.sendCommands(this.commands.saturation(this.zone, this.service.getCharacteristic(Characteristic.Saturation).value, true));
       }
-      this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
+      this.controller.sendCommands(this.commands.brightness(this.zone,
+        this.service.getCharacteristic(Characteristic.Brightness).value));
     }
   }
   return callback(null);
@@ -251,7 +254,6 @@ MiLightAccessory.prototype.setTemperature = function(temperature, callback, cont
     debug('Setting %s (%s, %d) temperature to %d', this.name, this.type, this.zone, temperature);
     var temp = 100-Math.round((temperature - 140)*100/(500-140));
     this.controller.sendCommands(this.commands.whiteTemperature(this.zone, temp));
-    this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
     this.service.getCharacteristic(Characteristic.WhiteMode).setValue(1, false, 'internal');
   }
   return callback(null);
@@ -260,12 +262,11 @@ MiLightAccessory.prototype.setTemperature = function(temperature, callback, cont
 MiLightAccessory.prototype.setNightMode = function(on, callback, context) {
   if (context !== 'internal') {
     debug('Setting %s (%s, %d) night mode to %s', this.name, this.type, this.zone, on);
-
     if (on) {
       this.controller.sendCommands(this.commands.nightMode(this.zone));
-      this.service.getCharacteristic(Characteristic.On).setValue(1, false, 'internal');
     } else {
-      this.controller.sendCommands(this.commands.hue(this.zone, Math.round((this.service.getCharacteristic(Characteristic.Hue).value + 14) * 255 / 360)%256));
+      this.setWhiteMode(this.service.getCharacteristic(Characteristic.WhiteMode).value,
+        function(dummy) {}, 'setmode');
     }
   }
   return callback(null);
