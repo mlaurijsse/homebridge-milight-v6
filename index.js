@@ -98,7 +98,7 @@ function MiLightAccessory(log, config, controller) {
   this.config = config;
   this.controller = controller;
   this.name = config.name || Milight;
-  this.type = config.type || "fullcolor";
+  this.type = config.type || "fullcolor8zone";
   this.zone = config.zone || 0;
   this.hasnightmode = config.hasnightmode || false;
 
@@ -108,7 +108,12 @@ function MiLightAccessory(log, config, controller) {
   this.service.addCharacteristic(Characteristic.Brightness).on('set', this.setBrightness.bind(this));
   this.service.addCharacteristic(Characteristic.Hue).on('set', this.setHue.bind(this));
 
-  if (this.type.toLowerCase() == "fullcolor") {
+  if (this.type.toLowerCase() == "fullcolor8zone") {
+    this.service.addCharacteristic(Characteristic.Saturation).on('set', this.setSaturation.bind(this));
+    this.service.addCharacteristic(Characteristic.WhiteMode).on('set', this.setWhiteMode.bind(this));
+    this.service.addCharacteristic(Characteristic.ColorTemperature).on('set', this.setTemperature.bind(this));
+    this.commands = Milight.commandsV6.fullColor8Zone;
+  } else if (this.type.toLowerCase() == "fullcolor") {
     this.service.addCharacteristic(Characteristic.Saturation).on('set', this.setSaturation.bind(this));
     this.service.addCharacteristic(Characteristic.WhiteMode).on('set', this.setWhiteMode.bind(this));
     this.service.addCharacteristic(Characteristic.ColorTemperature).on('set', this.setTemperature.bind(this));
